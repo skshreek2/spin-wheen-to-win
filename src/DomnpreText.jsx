@@ -5,7 +5,6 @@ export default function DomnpreText() {
   const [domResult, setDomResult] = useState(null);
   const [pretextResult, setPretextResult] = useState(null);
 
-  const [visibleItems, setVisibleItems] = useState([]);
   const [hasShownTexts, setHasShownTexts] = useState(false);
 
   const sampleText =
@@ -43,14 +42,7 @@ export default function DomnpreText() {
       lastHeight: lastHeight.toFixed(2),
       iterations: 500,
     });
-    if (!hasShownTexts) {
-      const list = Array.from({ length: 500 }, (_, i) => ({
-        id: i,
-        text: sampleText,
-      }));
-      setVisibleItems(list);
-      setHasShownTexts(true);
-    }
+    if (!hasShownTexts) setHasShownTexts(true);
   };
 
   const measureWithPretext = async () => {
@@ -78,37 +70,35 @@ export default function DomnpreText() {
   };
 
   return (
-    <div style={{ padding: 24, fontFamily: "Inter, sans-serif" }}>
-      <h1>DOM vs Pretext</h1>
-      <p style={{ maxWidth: 700 }}>
+    <section className="perf-panel">
+      <h2>Performance Test 1: DOM vs Pretext</h2>
+      <p className="perf-summary">
         Compare hidden DOM measurement with Pretext text layout.
       </p>
 
-      <div style={{ marginTop: 16, maxWidth: width, font, lineHeight: 1.4 }}>
+      <div className="perf-sample" style={{ maxWidth: width, font, lineHeight: 1.4 }}>
         {sampleText}
       </div>
-      <div
-        style={{ display: "flex", gap: 12, marginTop: 16, marginBottom: 24 }}
-      >
-        {/* <button onClick={measureWithDOM}>Measure with DOM</button> */}
-
-        <button onClick={measureWithDOM} disabled={hasShownTexts}>
+      <div className="perf-actions">
+        <button className="perf-btn" onClick={measureWithDOM} disabled={hasShownTexts}>
           {hasShownTexts ? "Already shown" : "Measure with DOM"}
         </button>
-        <button onClick={measureWithPretext}>Measure with Pretext</button>
+        <button className="perf-btn perf-btn--alt" onClick={measureWithPretext}>
+          Measure with Pretext
+        </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        <div style={{ padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
+      <div className="perf-grid">
+        <div className="perf-card">
           <h2>DOM result</h2>
           <pre>{JSON.stringify(domResult, null, 2)}</pre>
         </div>
 
-        <div style={{ padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
+        <div className="perf-card">
           <h2>Pretext result</h2>
           <pre>{JSON.stringify(pretextResult, null, 2)}</pre>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
