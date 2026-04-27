@@ -3,8 +3,9 @@ body {
   margin: 0;
   background: radial-gradient(circle at top, #dbeafe 0%, #f8fafc 35%, #f8fafc 100%);
   color: #111827;
+  overflow: hidden;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100vh;
 }

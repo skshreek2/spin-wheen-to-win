@@ -1,181 +1,169 @@
-import { useMemo, useRef, useState } from "react";
-import { layout, prepare } from "@chenglou/pretext";
-import "./App.css";
-import NEFTFullText from "./NEFTFullText";
-import {
-  ADD_PAYEE,
-  IMPS,
-  MANAGE_PAYEE,
-  NEFT_TRANSFER,
-  RTGS,
-  UPI_TRANSFER,
-} from "./constants";
+const NEFT_FULL_TEXT = `1. What is National Electronic Funds Transfer system?
 
-const WHEEL_ITEMS = [
-  UPI_TRANSFER,
-  NEFT_TRANSFER,
-  ADD_PAYEE,
-  MANAGE_PAYEE,
-  IMPS,
-  RTGS,
-];
-const SEGMENT_ANGLE = 360 / WHEEL_ITEMS.length;
-const LABEL_START_ANGLE = 90;
-const POINTER_ANGLE = 270;
-const RESULT_PANEL_WIDTH = 320;
-const RESULT_LINE_HEIGHT = 24;
-const RESULT_LINE_COUNT = 10;
-const RESULT_FADE_MS = 600;
+Ans: National Electronic Funds Transfer (NEFT) is a nation-wide centralised payment system owned and operated by the Reserve Bank of India (RBI). The set of procedures to be followed by various stakeholders participating in the system is available on the RBI website under the following link: https://rbi.org.in/Scripts/bs_viewcontent.aspx?Id=4388
 
-const buildLongResultText = (selectedItem) => {
-  const heading = selectedItem
-    ? `Result: ${selectedItem}\n\nDetailed spin report:\n`
-    : "Press spin to test your luck!\n\nDetailed spin report:\n";
+2. What are the advantages of using NEFT system?
 
-  switch (selectedItem) {
-    case UPI_TRANSFER:
-      <NEFTFullText />;
-      break;
-    case NEFT_TRANSFER:
-      break;
-    case ADD_PAYEE:
-      break;
-    case MANAGE_PAYEE:
-      break;
-    case IMPS:
-      break;
-    case RTGS:
-      break;
+Ans: NEFT offers the following advantages for funds transfer or receipt:
 
-    default:
-  }
-  const lines = Array.from({ length: RESULT_LINE_COUNT }, (_, idx) => {
-    const lineNo = idx + 1;
-    const itemLabel = selectedItem || "Pending";
-    return `Line ${lineNo}: Spin status for ${itemLabel}`;
-  });
+Round the clock availability on all days of the year.
 
-  return `${heading}${lines.join("\n")}`;
-};
+Near-real-time funds transfer to the beneficiary account and settlement in a secure manner.
 
-function App() {
-  const [rotation, setRotation] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [displayedResultText, setDisplayedResultText] = useState(() =>
-    buildLongResultText(""),
-  );
-  const [isResultVisible, setIsResultVisible] = useState(true);
-  const fadeTimeoutRef = useRef(null);
+Pan-India coverage through large network of branches of all types of banks.
 
-  const wheelStyle = useMemo(
-    () => ({
-      transform: `rotate(${rotation}deg)`,
-      transition: isSpinning
-        ? "transform 6s cubic-bezier(0.12, 0.8, 0.18, 1)"
-        : "none",
-    }),
-    [isSpinning, rotation],
-  );
+The beneficiary need not visit a bank branch for depositing the paper instruments. Remitter can initiate the remittances from his / her home / place of work using internet banking, if his / her bank offers such service.
 
-  const onSpin = () => {
-    if (isSpinning) return;
+Positive confirmation to the remitter by SMS / e-mail on credit to beneficiary account.
 
-    setIsSpinning(true);
+Penal interest provision for delay in credit or return of transactions.
 
-    const extraTurns = 8;
-    const randomStop = Math.floor(Math.random() * 360);
-    setRotation((prev) => prev + extraTurns * 360 + randomStop);
-  };
+No levy of charges by RBI from banks.
 
-  const onSpinEnd = () => {
-    const normalized = ((rotation % 360) + 360) % 360;
-    const delta =
-      (((POINTER_ANGLE - LABEL_START_ANGLE - normalized) % 360) + 360) % 360;
-    const index =
-      Math.floor((delta + SEGMENT_ANGLE / 2) / SEGMENT_ANGLE) %
-      WHEEL_ITEMS.length;
-    const nextWinner = WHEEL_ITEMS[index];
+No charges to savings bank account customers for online NEFT transactions.
 
-    if (fadeTimeoutRef.current) {
-      clearTimeout(fadeTimeoutRef.current);
-    }
+The transaction charges have been capped by RBI.
 
-    setIsResultVisible(false);
+Besides funds transfer, NEFT system can be used for a variety of transactions including payment of credit card dues to the card issuing banks, payment of loan EMI, inward foreign exchange remittances, etc.
 
-    fadeTimeoutRef.current = setTimeout(() => {
-      setDisplayedResultText(buildLongResultText(nextWinner));
-      setIsResultVisible(true);
-      fadeTimeoutRef.current = null;
-    }, RESULT_FADE_MS);
+The transaction has legal backing.
 
-    setIsSpinning(false);
-  };
+Available for one-way funds transfers from India to Nepal.
 
-  const preparedResult = useMemo(
-    () =>
-      prepare(displayedResultText, "500 16px Inter", {
-        whiteSpace: "pre-wrap",
-      }),
-    [displayedResultText],
-  );
+3. How does the NEFT system operate?
 
-  const resultMetrics = useMemo(
-    () => layout(preparedResult, RESULT_PANEL_WIDTH, RESULT_LINE_HEIGHT),
-    [preparedResult],
-  );
+Ans: Following is the step-wise flow of NEFT transaction.
 
-  const textAreaRows = Math.max(6, resultMetrics.lineCount + 2);
+Step-1: An individual / firm / corporate willing to transfer funds through NEFT can use the internet / mobile banking facility offered by his / her bank for initiating online funds transfer request. The remitter has to provide details of beneficiary such as, name of the beneficiary, name of the bank branch where the beneficiary has an account, IFSC of the beneficiary bank branch, account type and account number, etc. for addition of the beneficiary to his / her internet / mobile banking module. Upon successful beneficiary addition, the remitter can initiate online NEFT funds transfer by authorising debit to his / her account. Alternatively, the remitter can also visit his / her bank branch for initiating NEFT funds transfer through branch / off-line mode. The customer has to fill-in the beneficiary details in NEFT application form available at the bank branch and authorise the branch to debit to his / her account to the extent of the amount requested in NEFT application form.
 
-  return (
-    <main className="app">
-      <h1>Spin Wheel To Win</h1>
+Step-2: The originating bank prepares a message and sends the message to its pooling centre, also called the NEFT Service Centre.
 
-      <section className="content-row">
-        <div className="wheel-wrapper">
-          <div className="pointer" aria-hidden="true" />
-          <div className="wheel" style={wheelStyle} onTransitionEnd={onSpinEnd}>
-            <ul className="labels">
-              {
-                // switch(){
-                //   case:
+Step-3: The pooling centre forwards the message to the NEFT Processing Centre, operated by the RBI, to be included for the next available batch.
 
-                // }
-                WHEEL_ITEMS.map((item, index) => (
-                  <li
-                    key={item}
-                    style={{
-                      transform: `rotate(${index * SEGMENT_ANGLE + LABEL_START_ANGLE}deg)`,
-                    }}
-                  >
-                    <span>{item}</span>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-        </div>
+Step-4: The Processing Centre sorts the funds transfer transactions beneficiary bank-wise and prepares accounting entries to receive funds from the originating banks (debit) and give the funds to the beneficiary banks (credit). Thereafter, bank-wise remittance messages are forwarded to the beneficiary banks through their pooling centre (NEFT Service Centre).
 
-        <div className="result-panel">
-          <button className="spin-btn" onClick={onSpin} disabled={isSpinning}>
-            {isSpinning ? "Spinning..." : "Spin Now"}
-          </button>
-          <label htmlFor="result-text">Spin Result</label>
-          <textarea
-            id="result-text"
-            readOnly
-            rows={textAreaRows}
-            value={displayedResultText}
-            aria-live="polite"
-            className={
-              isResultVisible
-                ? "result-text is-visible"
-                : "result-text is-hidden"
-            }
-          />
-        </div>
-      </section>
-    </main>
-  );
-}
+Step-5: The beneficiary banks receive the inward remittance messages from the Processing Centre and pass on the credit to the beneficiary customers’ accounts.
 
-export default App;
+4. What is Indian Financial System Code?
+
+Ans: Indian Financial System Code (IFSC) is an alpha-numeric code that uniquely identifies a bank-branch participating in the NEFT system. It is a 11-digit code with the first 4 alpha characters representing the bank, and the last 6 characters representing the branch. The 5th character is 0 (zero). IFSC is used by the NEFT system to identify the originating / destination banks / branches and also to route the messages appropriately to the concerned banks / branches.
+
+5. How can I find the IFSC of a bank-branch?
+
+Ans: Bank-wise list of IFSCs is available with all the bank-branches participating in NEFT scheme. List of bank-wise branches participating in NEFT and their IFSCs is also available on the website of RBI at https://rbi.org.in/Scripts/bs_viewcontent.aspx?Id=2009. All member banks have also been advised to print the IFSC of the branch on cheques issued to their customers.
+
+6. Who can avail NEFT system for fund transfer / receipt?
+
+Ans: Individuals, firms and corporates maintaining accounts with any member bank, participating in the NEFT system, can electronically transfer funds to any individual, firm or corporate having an account with any other bank in the country participating in the NEFT system.
+
+The list of bank-wise branches participating in NEFT is available on the website of RBI at https://rbi.org.in/Scripts/bs_viewcontent.aspx?Id=2009.
+
+7. Is there any limit on funds / amount to be remitted through NEFT system?
+
+Ans: No, there is no limit imposed by the RBI for funds transfer through NEFT system. However, a member bank may place amount limits based on its own risk perception with the approval of its Board.
+
+8. Can the NEFT system be used for remitting funds even by those who do not have a bank account?
+
+Ans: Yes, a person who does not have a bank account can remit funds through NEFT to a beneficiary having a bank account, with another NEFT member bank. It can be done by depositing cash at the nearest NEFT enabled branch of any bank, by furnishing additional details such as complete address, telephone number, etc. Such cash remittances will, however, be restricted to a maximum of ₹50,000 per transaction.
+
+9. Can I send funds to my relative / friend residing abroad through NEFT system?
+
+Ans: The outbound remittances through NEFT system are permitted only to Nepal under Indo-Nepal Remittance Facility (INRF) Scheme. Under this Scheme, the remitter can transfer funds from any of the NEFT-enabled bank branches in India to Nepal, irrespective of whether the beneficiary in Nepal maintains an account with a bank branch in Nepal or not. The beneficiary would receive funds in Nepalese Rupees. The details of the INRF Scheme are available on the website of RBI at https://rbi.org.in/scripts/FAQView.aspx?Id=67.
+
+10. What are the operating hours of NEFT?
+
+Ans: The NEFT system is available round the clock throughout the year on all days, i.e., on 24x7x365 basis. NEFT presently operates in batches on half-hourly intervals throughout the day. In case of non-availability of NEFT for any reason, appropriate message will be broadcasted by RBI to all system participants.
+
+11. What are the essential details required for remitting funds through NEFT system?
+
+Ans: The essential elements of beneficiary's identification are:
+
+Beneficiary's Name
+Beneficiary's Branch Name
+Beneficiary's Bank Name
+Beneficiary's Account Type
+Beneficiary's Account No.
+Beneficiary's Branch IFSC
+Sender and Beneficiary Legal Entity Identifier (for eligible transactions)
+
+12. What are the customer charges levied by bank for NEFT transactions?
+
+Ans: There are no charges to be levied for inward transactions at destination bank branches for giving credit to beneficiary accounts.
+
+For outward transactions undertaken using the NEFT system, RBI stopped levying processing charges on member banks from July 01, 2019.
+
+Also, in order to give further impetus to digital retail payments, banks have been advised to not levy any charges from their savings bank account holders for NEFT funds transfers initiated online with effect from January 01, 2020.
+
+The maximum charges which originating bank can be levy from its customers for other outward transactions, if they so desire, are given below: -
+
+- For transactions up to ₹10,000 : not exceeding ₹2.50 (+ Applicable GST)
+
+- For transactions above ₹10,000 up to ₹1 lakh: not exceeding ₹5 (+ Applicable GST)
+
+- For transactions above ₹1 lakh and up to ₹2 lakhs: not exceeding ₹15 (+ Applicable GST)
+
+- For transactions above ₹2 lakhs: not exceeding ₹25 (+ Applicable GST)
+
+The details about charges applicable for transferring funds from India to Nepal using the NEFT system under the INRF Scheme is available on the RBI website at https://rbi.org.in/scripts/FAQView.aspx?Id=67.
+
+13. Can I use NEFT to transfer funds from / to NRE and NRO accounts?
+
+Ans: Yes, NEFT can be used to transfer funds from / to NRE and NRO accounts in the country. This, however, is subject to the adherence of the provisions of the Foreign Exchange Management Act, 2000 (FEMA) and Wire Transfer Guidelines.
+
+14. Can I originate a NEFT transaction to draw / receive funds from another account?
+
+Ans: No. NEFT is a credit-push system i.e., transactions can be originated by the payer / remitter / sender only to pay / transfer / remit funds to beneficiary.
+
+15. How can I track status of NEFT transactions initiated? Who should be approached to know status of the NEFT transaction?
+
+Ans: The remitter and the beneficiary can track status of NEFT transaction by contacting NEFT Customer Facilitation Centre (CFC) of their bank, respectively. Details of NEFT CFCs of banks are available on the websites of the respective banks. The details of CFC of member banks are also available on the website of RBI at https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=2070.
+
+For the purpose of faster tracking of transaction, you may need to provide few details related to transaction such as Unique Transaction Reference (UTR) number / transaction reference number, date of transaction, sender IFSC, amount, beneficiary name, beneficiary IFSC, etc., to your bank.
+
+16. Which details of source of a NEFT transaction should be provided by a bank to its customer?
+
+Ans: After crediting the account of the beneficiary, the beneficiary bank shall advise the beneficiary of the funds received. The remitter's name shall be printed in the Account Statement / Pass Book of the beneficiary.
+
+There is an optional field with tag 7495 in NEFT payment message that enables inclusion of additional sender-to-receiver information. Destination banks should capture and store this information in their CBS / other systems as appropriate, to be provided to the customer on request.
+
+If the beneficiary specified in the sender's payment instruction fails to get payment through the NEFT system for some valid reasons, the originating bank shall provide the description "NEFT-Return" in the pass book / account statement of the originator whose NEFT transaction is returned.
+
+17. What is the Help Desk / Contact point at the RBI?
+
+Ans: The NEFT Help Desk / Contact point of the RBI can be approached at nefthelpdeskncc@rbi.org.in.
+
+18. How much time should I expect for receipt of funds by beneficiary?
+
+Ans: A timeline of two hours from the batch settlement can be expected, within which beneficiary's account should be credited.
+
+19. What happens if funds are not credited to the beneficiary? Or Do I get my money back, if funds are not credited to the beneficiary due to various reasons?
+
+Ans: If it is not possible to afford credit to the account of the beneficiary for any reason, destination banks are required to return the transaction (to the originating branch) within two hours of completion of the batch in which the transaction was processed.
+
+20. What are the penalties / compensation for delayed credit or return of funds by beneficiary bank?
+
+Ans: If the NEFT transaction is not credited or returned within two hours after batch settlement, then the bank is liable to pay penal interest to the affected customer at the current RBI LAF Repo Rate plus two percent for the period of delay / till the date of credit or refund, as the case may be, is afforded to the customers' account without waiting for a specific claim to be lodged by the customer in this regard.
+
+21. What happens if I write wrong account number of beneficiary?
+
+Ans: The credit is given to the account number written / given by remitter in his / her application / instruction. Credit to beneficiary account is released solely based on account number. It is the responsibility of remitting customer to write correct account number. The originator / sender should exercise due care in providing the correct account number of the beneficiary, in the NEFT remittance instruction / application.
+
+22. Whom should I approach for raising dispute / complaint related to NEFT transaction?
+
+Ans: You may approach grievance redressal cell of your bank with details of the disputed transaction. In case your grievance is not resolved within 30 days, you may make a complaint under "The Reserve Bank-Integrated Ombudsman Scheme (RB-IOS 2021)". The RB-IOS 2021 provides a single reference point for customers to file complaints against the RBI regulated entities specified therein. The RB-IOS, 2021 is available at the following path on the RBI website: https://rbidocs.rbi.org.in/rdocs/content/pdfs/RBIOS2021_121121.pdf.
+
+23. How can I file complaint under the RB-IOS 2021?
+
+Ans: Complaints can be filed online on https://cms.rbi.org.in, or through the dedicated e-mail or sent in physical mode to the 'Centralised Receipt and Processing Centre' set up at RBI, 4th Floor, Sector 17, Chandigarh - 160 017 in the format given at the following path - https://rbidocs.rbi.org.in/rdocs/content/pdfs/RBIOS2021_121121_A.pdf. A toll-free number - 14448 (9:30 am to 5:15 pm) - is also available for customers to seek assistance in filing complaints and information on grievance redressal, with multi-lingual support.
+
+24. What are the practices which should be adopted by a customer for safe and secure digital payments?
+
+Ans: The webpage of RBI "RBI Kehta Hai" at https://www.rbi.org.in/commonperson/English/Scripts/rbikehtahai.aspx for information regarding ways to ensure safe and secure digital payments can be referred to. Further, RBI has also launched a magazine named BE(A)WARE for users of digital transactions which can be accessed at https://rbidocs.rbi.org.in/rdocs/content/pdfs/BEAWARE07032022.pdf.
+
+25. What is Legal Entity Identifier and how is it relevant in case of large value NEFT transactions?
+
+Ans: The FAQs on "Legal Entity Identifier (LEI) for Large Value Transactions in Centralised Payment Systems" on the RBI website at https://www.rbi.org.in/Scripts/FAQView.aspx?Id=140 can be referred to.
+
+These FAQs are issued by the Reserve Bank of India for information and general guidance purposes only. The Bank will not be held responsible for actions taken and/or decisions made on the basis of the same. For clarifications or interpretations, if any, one may be guided by the relevant circulars and notifications issued from time to time by the Bank.`
+
+export default NEFT_FULL_TEXT

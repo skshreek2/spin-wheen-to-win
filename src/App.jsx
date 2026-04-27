@@ -2,6 +2,11 @@ import { useMemo, useRef, useState } from "react";
 import { layout, prepare } from "@chenglou/pretext";
 import "./App.css";
 import NEFTFullText from "./NEFTFullText";
+import UPIFullText from "./UPIFullText";
+import AddPayeeFullText from "./AddPayeeFullText";
+import ManagePayeeFullText from "./ManagePayeeFullText";
+import IMPSFullText from "./IMPSFullText";
+import RTGSFullText from "./RTGSFullText";
 import {
   ADD_PAYEE,
   IMPS,
@@ -10,6 +15,7 @@ import {
   RTGS,
   UPI_TRANSFER,
 } from "./constants";
+import PretextFlowDemo from "./PretextFlowDemo.jsx";
 
 const WHEEL_ITEMS = [
   UPI_TRANSFER,
@@ -22,33 +28,29 @@ const WHEEL_ITEMS = [
 const SEGMENT_ANGLE = 360 / WHEEL_ITEMS.length;
 const LABEL_START_ANGLE = 90;
 const POINTER_ANGLE = 270;
-const RESULT_PANEL_WIDTH = 320;
+const RESULT_PANEL_WIDTH = 620;
 const RESULT_LINE_HEIGHT = 24;
 const RESULT_LINE_COUNT = 10;
 const RESULT_FADE_MS = 600;
+const RESULT_DETAILS = {
+  [UPI_TRANSFER]: UPIFullText,
+  [NEFT_TRANSFER]: NEFTFullText,
+  [ADD_PAYEE]: AddPayeeFullText,
+  [MANAGE_PAYEE]: ManagePayeeFullText,
+  [IMPS]: IMPSFullText,
+  [RTGS]: RTGSFullText,
+};
 
 const buildLongResultText = (selectedItem) => {
   const heading = selectedItem
     ? `Result: ${selectedItem}\n\nDetailed spin report:\n`
     : "Press spin to test your luck!\n\nDetailed spin report:\n";
 
-  switch (selectedItem) {
-    case UPI_TRANSFER:
-      <NEFTFullText />;
-      break;
-    case NEFT_TRANSFER:
-      break;
-    case ADD_PAYEE:
-      break;
-    case MANAGE_PAYEE:
-      break;
-    case IMPS:
-      break;
-    case RTGS:
-      break;
-
-    default:
+  const details = RESULT_DETAILS[selectedItem];
+  if (details) {
+    return `${heading}${details}`;
   }
+
   const lines = Array.from({ length: RESULT_LINE_COUNT }, (_, idx) => {
     const lineNo = idx + 1;
     const itemLabel = selectedItem || "Pending";
@@ -81,7 +83,6 @@ function App() {
     if (isSpinning) return;
 
     setIsSpinning(true);
-
     const extraTurns = 8;
     const randomStop = Math.floor(Math.random() * 360);
     setRotation((prev) => prev + extraTurns * 360 + randomStop);
@@ -101,7 +102,6 @@ function App() {
     }
 
     setIsResultVisible(false);
-
     fadeTimeoutRef.current = setTimeout(() => {
       setDisplayedResultText(buildLongResultText(nextWinner));
       setIsResultVisible(true);
@@ -123,24 +123,19 @@ function App() {
     () => layout(preparedResult, RESULT_PANEL_WIDTH, RESULT_LINE_HEIGHT),
     [preparedResult],
   );
-
-  const textAreaRows = Math.max(6, resultMetrics.lineCount + 2);
+  const textAreaRows = Math.min(20, Math.max(10, resultMetrics.lineCount + 2));
 
   return (
     <main className="app">
       <h1>Spin Wheel To Win</h1>
 
       <section className="content-row">
-        <div className="wheel-wrapper">
-          <div className="pointer" aria-hidden="true" />
-          <div className="wheel" style={wheelStyle} onTransitionEnd={onSpinEnd}>
-            <ul className="labels">
-              {
-                // switch(){
-                //   case:
-
-                // }
-                WHEEL_ITEMS.map((item, index) => (
+        <div className="wheel-panel">
+          <div className="wheel-wrapper">
+            <div className="pointer" aria-hidden="true" />
+            <div className="wheel" style={wheelStyle} onTransitionEnd={onSpinEnd}>
+              <ul className="labels">
+                {WHEEL_ITEMS.map((item, index) => (
                   <li
                     key={item}
                     style={{
@@ -149,16 +144,16 @@ function App() {
                   >
                     <span>{item}</span>
                   </li>
-                ))
-              }
-            </ul>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-
-        <div className="result-panel">
           <button className="spin-btn" onClick={onSpin} disabled={isSpinning}>
             {isSpinning ? "Spinning..." : "Spin Now"}
           </button>
+        </div>
+
+        <div className="result-panel">
           <label htmlFor="result-text">Spin Result</label>
           <textarea
             id="result-text"
@@ -166,14 +161,17 @@ function App() {
             rows={textAreaRows}
             value={displayedResultText}
             aria-live="polite"
-            className={
-              isResultVisible
-                ? "result-text is-visible"
-                : "result-text is-hidden"
-            }
+            className={isResultVisible ? "result-text is-visible" : "result-text is-hidden"}
           />
         </div>
       </section>
+
+      <section className="pretext-demo-section">
+        <h2>@chenglou/pretext - Obstacle Reflow Demo</h2>
+        <p>Drag the obstacle. Text reflows line-by-line via layoutNextLine().</p>
+        <PretextFlowDemo />
+      </section>
+
     </main>
   );
 }

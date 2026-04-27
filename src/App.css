@@ -1,24 +1,37 @@
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.2rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.5rem;
   padding: 2rem;
+  box-sizing: border-box;
+  overflow: auto;
 }
 
 h1 {
   margin: 0;
   font-size: clamp(1.8rem, 4vw, 2.5rem);
+  align-self: center;
+  text-align: center;
 }
 
 .content-row {
-  width: min(100%, 900px);
+  width: min(100%, 1280px);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 1.5rem;
+}
+
+.wheel-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 0 0 420px;
+  margin-left: 1.25rem;
 }
 
 .wheel-wrapper {
@@ -28,7 +41,7 @@ h1 {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  flex: 1 1 420px;
+  flex: 0 0 420px;
 }
 
 .pointer {
@@ -110,9 +123,15 @@ h1 {
 .result-panel {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0.5rem;
-  width: min(44vw, 340px);
-  min-width: 280px;
+  width: min(62vw, 700px);
+  min-width: 420px;
+  flex: 1 1 auto;
+  border-left: 2px solid #cbd5e1;
+  padding-left: 1.25rem;
+  min-height: calc(100vh - 4rem);
+  box-sizing: border-box;
 }
 
 .result-panel label {
@@ -121,7 +140,10 @@ h1 {
 
 .result-panel textarea {
   width: 100%;
-  resize: none;
+  height: 68vh;
+  min-height: 68vh;
+  max-height: 68vh;
+  overflow-y: auto;
   border-radius: 0.75rem;
   border: 1px solid #94a3b8;
   padding: 0.8rem;
@@ -132,59 +154,92 @@ h1 {
 }
 
 .result-text {
-  opacity: 1;
+  color: rgba(15, 23, 42, 1);
 }
 
 .result-text.is-visible {
-  animation: fade-wave-in 0.42s ease forwards;
+  animation: text-fade-in 0.42s ease forwards;
 }
 
 .result-text.is-hidden {
-  animation: fade-wave-out 0.42s ease forwards;
+  animation: text-fade-out 0.42s ease forwards;
 }
 
-@keyframes fade-wave-out {
+@keyframes text-fade-out {
   0% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-  35% {
-    opacity: 0.85;
-    transform: translateY(-1px);
-  }
-  70% {
-    opacity: 0.45;
-    transform: translateY(1px);
-    filter: blur(0.4px);
+    color: rgba(15, 23, 42, 1);
   }
   100% {
-    opacity: 0;
-    transform: translateY(0);
-    filter: blur(0.8px);
+    color: rgba(15, 23, 42, 0);
   }
 }
 
-@keyframes fade-wave-in {
+@keyframes text-fade-in {
   0% {
-    opacity: 0;
-    transform: translateY(0);
-    filter: blur(0.8px);
-  }
-  35% {
-    opacity: 0.5;
-    transform: translateY(1px);
-    filter: blur(0.4px);
-  }
-  70% {
-    opacity: 0.85;
-    transform: translateY(-1px);
+    color: rgba(15, 23, 42, 0);
   }
   100% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
+    color: rgba(15, 23, 42, 1);
   }
+}
+
+.pretext-demo-section {
+  width: min(100%, 1280px);
+  margin-top: 1rem;
+}
+
+.pretext-demo-section h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.pretext-demo-section p {
+  margin: 0 0 0.75rem;
+  color: #475569;
+}
+
+.demo-viewport {
+  position: relative;
+  border: 1px solid #94a3b8;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  font: 500 1rem/1.5 Inter, system-ui, sans-serif;
+}
+
+.demo-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #0f172a;
+  white-space: pre;
+  overflow: hidden;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+.demo-obstacle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  border: 1px dashed #334155;
+  border-radius: 0.5rem;
+  background: rgba(148, 163, 184, 0.22);
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: grid;
+  place-items: center;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  cursor: grab;
+  user-select: none;
+}
+
+.demo-obstacle:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 900px) {
@@ -195,5 +250,8 @@ h1 {
   .result-panel {
     width: min(86vw, 420px);
     min-width: 0;
+    min-height: auto;
+    border-left: none;
+    padding-left: 0;
   }
 }
