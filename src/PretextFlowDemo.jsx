@@ -7,6 +7,8 @@ const MIN_HEIGHT = 260;
 const GAP = 16;
 const INNER_PAD_X = 12;
 const INNER_PAD_Y = 12;
+const OBSTACLE_WIDTH = 64;
+const OBSTACLE_HEIGHT = 64;
 
 const TEXT =
   "Drag the box and observe how each line is laid out independently using layoutNextLine(). " +
@@ -19,8 +21,6 @@ export default function PretextFlowDemo() {
   const [obstacle, setObstacle] = useState({
     x: 200,
     y: 60,
-    width: 150,
-    height: 100,
   });
 
   const [dragging, setDragging] = useState(false);
@@ -35,9 +35,9 @@ export default function PretextFlowDemo() {
     let y = 0;
 
     const obsLeft = obstacle.x;
-    const obsRight = obstacle.x + obstacle.width;
+    const obsRight = obstacle.x + OBSTACLE_WIDTH;
     const obsTop = obstacle.y;
-    const obsBottom = obstacle.y + obstacle.height;
+    const obsBottom = obstacle.y + OBSTACLE_HEIGHT;
 
     const contentWidth = VIEWPORT_WIDTH - INNER_PAD_X * 2;
     const leftWidth = obsLeft - GAP;
@@ -112,7 +112,7 @@ export default function PretextFlowDemo() {
 
       setObstacle((prev) => ({
         ...prev,
-        x: Math.max(0, Math.min(contentWidth - prev.width, Math.round(nextX))),
+        x: Math.max(0, Math.min(contentWidth - OBSTACLE_WIDTH, Math.round(nextX))),
         y: Math.max(0, Math.round(nextY)),
       }));
     };
@@ -153,18 +153,22 @@ export default function PretextFlowDemo() {
         onPointerDown={onDown}
         style={{
           position: "absolute",
-          width: obstacle.width,
-          height: obstacle.height,
-          background: "#fdd",
+          width: OBSTACLE_WIDTH,
+          height: OBSTACLE_HEIGHT,
           transform: `translate(${INNER_PAD_X + obstacle.x}px, ${INNER_PAD_Y + obstacle.y}px)`,
           cursor: "grab",
-          border: "1px solid #fca5a5",
-          borderRadius: 6,
-          display: "grid",
-          placeItems: "center",
         }}
       >
-        Drag
+        <img
+          src="/obstacle-fun.svg"
+          alt="Obstacle"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
+        />
       </div>
 
       {flow.lines.map((line, i) => (
