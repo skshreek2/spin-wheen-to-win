@@ -33,6 +33,8 @@ const RESULT_LINE_HEIGHT = 24;
 const RESULT_LINE_COUNT = 10;
 const RESULT_FADE_MS = 600;
 const RESULT_HORIZONTAL_PADDING = 24;
+const RESULT_WAVE_BUFFER = 12;
+const RESULT_WAVE_INSET = 12;
 const RESULT_DETAILS = {
   [UPI_TRANSFER]: UPIFullText,
   [NEFT_TRANSFER]: NEFTFullText,
@@ -79,9 +81,12 @@ function App() {
   const [isResultVisible, setIsResultVisible] = useState(true);
   const fadeTimeoutRef = useRef(null);
   const resultTextRef = useRef(null);
-  const contentRowRef = useRef(null);
   const [resultTextWidth, setResultTextWidth] = useState(620);
-  const [contentRowHeight, setContentRowHeight] = useState(460);
+  const [resultTextHeight, setResultTextHeight] = useState(380);
+  const [resultWavePhase, setResultWavePhase] = useState(0);
+  const [resultRipples, setResultRipples] = useState([
+    { x: 280, y: 130, t0: 0, strength: 1.1 },
+  ]);
   const point2Text =
     "Pretext lets you lay out text line by line. You get the actual line strings, their widths, and cursor positions. This means you can render to canvas, SVG, or WebGL - not just the DOM. You can also vary the available width per line, flowing text around images or other obstacles.";
   const [point2MaxWidth, setPoint2MaxWidth] = useState(350);
@@ -136,6 +141,7 @@ function App() {
     const updateWidth = () => {
       if (!resultTextRef.current) return;
       setResultTextWidth(resultTextRef.current.clientWidth);
+      setResultTextHeight(resultTextRef.current.clientHeight);
     };
     updateWidth();
 
@@ -146,31 +152,28 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!contentRowRef.current || typeof ResizeObserver === "undefined") {
-      return undefined;
-    }
-
-    const updateHeight = () => {
-      if (!contentRowRef.current) return;
-      setContentRowHeight(Math.ceil(contentRowRef.current.scrollHeight));
+    let last = performance.now();
+    let rafId = null;
+    const tick = (now) => {
+      const dt = Math.min(0.045, (now - last) / 1000);
+      last = now;
+      setResultWavePhase((prev) => prev + dt * 3.3);
+      rafId = requestAnimationFrame(tick);
     };
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(contentRowRef.current);
-
-    return () => observer.disconnect();
-  }, [selectionMode, resultTextWidth, displayedResultText]);
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   const preparedResult = useMemo(
     () => prepareWithSegments(displayedResultText, "500 16px Inter"),
     [displayedResultText],
   );
 
-  const wrappedResultText = useMemo(() => {
+  const resultLayout = useMemo(() => {
     const usableWidth = Math.max(160, resultTextWidth - RESULT_HORIZONTAL_PADDING);
-    const withLines = layoutWithLines(preparedResult, usableWidth, RESULT_LINE_HEIGHT);
-    return withLines.lines.map((line) => line.text).join("\n");
+    return layoutWithLines(preparedResult, usableWidth, RESULT_LINE_HEIGHT);
   }, [preparedResult, resultTextWidth]);
 
   const point2Prepared = useMemo(
@@ -328,7 +331,7 @@ function App() {
           <p className="app-subtitle">
             Spin the wheel and explore the obstacle reflow demo powered by Pretext.
           </p>
-          <section className="content-row" ref={contentRowRef}>
+          <section className="content-row">
             <div className="wheel-panel">
               <div className="wheel-wrapper">
                 <div className="pointer" aria-hidden="true" />
@@ -359,22 +362,108 @@ function App() {
 
             <div className="result-panel">
               <label htmlFor="result-text">Spin Result</label>
-              <textarea
+              <div
                 ref={resultTextRef}
                 id="result-text"
-                readOnly
-                value={wrappedResultText}
                 aria-live="polite"
-                className={isResultVisible ? "result-text is-visible" : "result-text is-hidden"}
-              />
+                className={`result-text result-wave ${isResultVisible ? "is-visible" : "is-hidden"}`}
+                onPointerDown={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
+                  const y = e.clientY - rect.top + e.currentTarget.scrollTop;
+                  setResultRipples((prev) => [
+                    ...prev.slice(-6),
+                    { x, y, t0: resultWavePhase, strength: 1.45 },
+                    { x, y, t0: resultWavePhase + 0.24, strength: 1.0 },
+                  ]);
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    minHeight: Math.max(
+                      resultTextHeight,
+                      resultLayout.lineCount * RESULT_LINE_HEIGHT + RESULT_WAVE_INSET * 2,
+                    ),
+                  }}
+                >
+                  {resultLayout.lines.map((line, index) => {
+                    const baseX = RESULT_WAVE_INSET;
+                    const y = RESULT_WAVE_INSET + index * RESULT_LINE_HEIGHT;
+                    const availableLineWidth = Math.max(
+                      40,
+                      resultTextWidth - RESULT_WAVE_INSET * 2,
+                    );
+                    const lineWidth = Math.min(
+                      availableLineWidth,
+                      Math.ceil(line.width) + RESULT_WAVE_BUFFER,
+                    );
+                    const lineCenterX = baseX + lineWidth * 0.5;
+
+                    let rippleX = 0;
+                    let rippleY = 0;
+                    for (let i = 0; i < resultRipples.length; i += 1) {
+                      const drop = resultRipples[i];
+                      const age = Math.max(0, resultWavePhase - drop.t0);
+                      if (age > 13) continue;
+                      const dx = lineCenterX - drop.x;
+                      const dy = y - drop.y;
+                      const distance = Math.hypot(dx, dy) + 0.0001;
+                      const waveFront = age * 130;
+                      const travel = distance - waveFront;
+                      const envelope = Math.exp(-distance / 520) * Math.exp(-age / 7.2);
+                      const crestWidth = 26;
+                      const crest = Math.exp(-(travel * travel) / (2 * crestWidth * crestWidth));
+                      const ring = crest * envelope * (drop.strength ?? 1) * 9;
+                      rippleX += (dx / distance) * ring * 0.42;
+                      rippleY += (dy / distance) * ring * 0.3;
+                    }
+
+                    const baseSwellX =
+                      Math.sin(resultWavePhase * 1.35 + y * 0.018) * 1.7 +
+                      Math.sin(resultWavePhase * 0.7) * 0.8;
+                    const baseSwellY = Math.cos(resultWavePhase * 1.05 + y * 0.012) * 0.55;
+                    const xOffset = baseSwellX + rippleX;
+                    const yOffset = baseSwellY + rippleY;
+
+                    const edgePadding = 10;
+                    const maxRight = resultTextWidth - (baseX + lineWidth) - edgePadding;
+                    const maxLeft = baseX - edgePadding;
+                    const safeX = Math.max(-maxLeft, Math.min(maxRight, xOffset));
+
+                    return (
+                      <div
+                        key={`${index}-${line.width}`}
+                        style={{
+                          position: "absolute",
+                          left: baseX,
+                          top: y,
+                          width: lineWidth,
+                          height: RESULT_LINE_HEIGHT,
+                          lineHeight: `${RESULT_LINE_HEIGHT}px`,
+                          whiteSpace: "pre",
+                          overflow: "hidden",
+                          transform: `translate3d(${safeX}px, ${yOffset}px, 0)`,
+                          color: "#0f172a",
+                          textShadow: "0 1px 0 rgba(255,255,255,0.82)",
+                          willChange: "transform",
+                        }}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </section>
 
-          <section className="pretext-demo-section" style={{ minHeight: `${contentRowHeight}px` }}>
+          <section className="pretext-demo-section">
             <h2>@chenglou/pretext - Obstacle Reflow Demo</h2>
-            <p>Drag the obstacle. Text reflows line-by-line via layoutNextLine().</p>
+            <p>Drag the obstacle image. Text auto aligns and reflows line-by-line.</p>
             <PretextFlowDemo />
           </section>
+
         </>
       )}
 
