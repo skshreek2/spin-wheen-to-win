@@ -17,6 +17,7 @@ import {
 } from "./constants";
 import PretextFlowDemo from "./PretextFlowDemo.jsx";
 import DomnpreText from "./DomnpreText.jsx";
+import EditorialEngineDemo from "./EditorialEngineDemo.jsx";
 
 const WHEEL_ITEMS = [
   UPI_TRANSFER,
@@ -323,6 +324,19 @@ function App() {
                 </div>
               </div>
             </div>
+          </section>
+          <section
+            style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: "1px solid #dbeafe",
+            }}
+          >
+            <h2 style={{ margin: "0 0 8px" }}>Performance Test 3 : The Editorial Engine</h2>
+            <p style={{ margin: "0 0 12px", color: "#475569", fontSize: 14 }}>
+              Multi-column text compositor with moving obstacles and zero DOM reads during layout.
+            </p>
+            <EditorialEngineDemo />
           </section>
         </section>
       ) : (
