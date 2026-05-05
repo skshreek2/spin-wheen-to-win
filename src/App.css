@@ -206,9 +206,64 @@ h1 {
   align-self: stretch;
 }
 
+.result-panel__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .result-panel label {
   font-weight: 700;
   margin: 0;
+}
+
+.result-blast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ea580c;
+}
+
+.result-blast-icon--idle {
+  color: #fb923c;
+  opacity: 0.55;
+}
+
+.result-blast-icon__svg {
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(234, 88, 12, 0.35));
+}
+
+.result-blast-icon--blast {
+  animation: result-blast-pulse 0.28s ease-in-out infinite;
+}
+
+.result-blast-icon--reveal {
+  animation: result-blast-settle 0.55s ease-out forwards;
+}
+
+@keyframes result-blast-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18) rotate(5deg);
+    opacity: 0.92;
+  }
+}
+
+@keyframes result-blast-settle {
+  0% {
+    transform: scale(1.35) rotate(12deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 .result-panel textarea,

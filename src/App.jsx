@@ -32,7 +32,8 @@ const LABEL_START_ANGLE = 90;
 const POINTER_ANGLE = 270;
 const RESULT_LINE_HEIGHT = 24;
 const RESULT_LINE_COUNT = 10;
-const RESULT_FADE_MS = 600;
+const RESULT_BLAST_MS = 480;
+const RESULT_REVEAL_MS = 420;
 const RESULT_HORIZONTAL_PADDING = 24;
 const RESULT_WAVE_BUFFER = 12;
 const RESULT_WAVE_INSET = 12;
@@ -72,6 +73,8 @@ const buildLongResultText = (selectedItem) => {
   return `${heading}${lines.join("\n")}`;
 };
 
+const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+
 function App() {
   const [selectionMode, setSelectionMode] = useState("performance");
   const [rotation, setRotation] = useState(0);
@@ -79,8 +82,12 @@ function App() {
   const [displayedResultText, setDisplayedResultText] = useState(() =>
     buildLongResultText(""),
   );
-  const [isResultVisible, setIsResultVisible] = useState(true);
-  const fadeTimeoutRef = useRef(null);
+  const [blastSourceText, setBlastSourceText] = useState("");
+  const [blastProgress, setBlastProgress] = useState(0);
+  const [revealProgress, setRevealProgress] = useState(1);
+  const blastAnimRef = useRef(null);
+  const revealAnimRef = useRef(null);
+  const pendingWinnerRef = useRef(null);
   const resultTextRef = useRef(null);
   const [resultTextWidth, setResultTextWidth] = useState(620);
   const [resultTextHeight, setResultTextHeight] = useState(380);
@@ -102,8 +109,20 @@ function App() {
     [isSpinning, rotation],
   );
 
+  const cancelResultAnimations = () => {
+    if (blastAnimRef.current) cancelAnimationFrame(blastAnimRef.current);
+    if (revealAnimRef.current) cancelAnimationFrame(revealAnimRef.current);
+    blastAnimRef.current = null;
+    revealAnimRef.current = null;
+  };
+
   const onSpin = () => {
     if (isSpinning) return;
+
+    cancelResultAnimations();
+    setBlastSourceText("");
+    setBlastProgress(0);
+    setRevealProgress(1);
 
     setIsSpinning(true);
     const extraTurns = 8;
@@ -120,16 +139,8 @@ function App() {
       WHEEL_ITEMS.length;
     const nextWinner = WHEEL_ITEMS[index];
 
-    if (fadeTimeoutRef.current) {
-      clearTimeout(fadeTimeoutRef.current);
-    }
-
-    setIsResultVisible(false);
-    fadeTimeoutRef.current = setTimeout(() => {
-      setDisplayedResultText(buildLongResultText(nextWinner));
-      setIsResultVisible(true);
-      fadeTimeoutRef.current = null;
-    }, RESULT_FADE_MS);
+    pendingWinnerRef.current = nextWinner;
+    setBlastSourceText(displayedResultText);
 
     setIsSpinning(false);
   };
@@ -167,6 +178,52 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (blastAnimRef.current) cancelAnimationFrame(blastAnimRef.current);
+      if (revealAnimRef.current) cancelAnimationFrame(revealAnimRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!blastSourceText) return undefined;
+
+    setBlastProgress(0);
+
+    const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / RESULT_BLAST_MS);
+      setBlastProgress(t);
+      if (t < 1) {
+        blastAnimRef.current = requestAnimationFrame(tick);
+      } else {
+        blastAnimRef.current = null;
+        const winner = pendingWinnerRef.current;
+        setDisplayedResultText(buildLongResultText(winner));
+        setBlastSourceText("");
+        setBlastProgress(0);
+
+        const rStart = performance.now();
+        const revealTick = (rNow) => {
+          const rt = Math.min(1, (rNow - rStart) / RESULT_REVEAL_MS);
+          setRevealProgress(easeOutCubic(rt));
+          if (rt < 1) {
+            revealAnimRef.current = requestAnimationFrame(revealTick);
+          } else {
+            setRevealProgress(1);
+            revealAnimRef.current = null;
+          }
+        };
+        revealAnimRef.current = requestAnimationFrame(revealTick);
+      }
+    };
+    blastAnimRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (blastAnimRef.current) cancelAnimationFrame(blastAnimRef.current);
+    };
+  }, [blastSourceText]);
+
   const preparedResult = useMemo(
     () => prepareWithSegments(displayedResultText, "500 16px Inter"),
     [displayedResultText],
@@ -176,6 +233,20 @@ function App() {
     const usableWidth = Math.max(160, resultTextWidth - RESULT_HORIZONTAL_PADDING);
     return layoutWithLines(preparedResult, usableWidth, RESULT_LINE_HEIGHT);
   }, [preparedResult, resultTextWidth]);
+
+  const preparedBlast = useMemo(
+    () =>
+      blastSourceText
+        ? prepareWithSegments(blastSourceText, "500 16px Inter")
+        : null,
+    [blastSourceText],
+  );
+
+  const blastLayout = useMemo(() => {
+    if (!preparedBlast) return null;
+    const usableWidth = Math.max(160, resultTextWidth - RESULT_HORIZONTAL_PADDING);
+    return layoutWithLines(preparedBlast, usableWidth, RESULT_LINE_HEIGHT);
+  }, [preparedBlast, resultTextWidth]);
 
   const point2Prepared = useMemo(
     () => prepareWithSegments(point2Text, "16px Inter"),
@@ -375,12 +446,45 @@ function App() {
             </div>
 
             <div className="result-panel">
-              <label htmlFor="result-text">Spin Result</label>
+              <div className="result-panel__heading">
+                <label htmlFor="result-text">Spin Result</label>
+                <span
+                  className={
+                    blastSourceText
+                      ? "result-blast-icon result-blast-icon--blast"
+                      : revealProgress < 1
+                        ? "result-blast-icon result-blast-icon--reveal"
+                        : "result-blast-icon result-blast-icon--idle"
+                  }
+                  aria-hidden="true"
+                  title="Result blast animation"
+                >
+                  <svg
+                    className="result-blast-icon__svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M12 1.5l1.2 4.2 4.3-.9-3.4 3.8 2.6-4.1-.3 4.4 3.3-3.7-2.1 1.6 4L12 14.8l-3.2 3.6 1.6-4-3.7 2.1 4.4-3.3-.3-4.1 3.8-2.6-4.3-.9L12 1.5z"
+                    />
+                    <path
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                      d="M12 5v2M12 17v2M5 12H3M21 12h-2M7 7l-1.4-1.4M18.4 18.4 17 17M7 17l-1.4 1.4M18.4 5.6 17 7"
+                    />
+                  </svg>
+                </span>
+              </div>
               <div
                 ref={resultTextRef}
                 id="result-text"
                 aria-live="polite"
-                className={`result-text result-wave ${isResultVisible ? "is-visible" : "is-hidden"}`}
+                className="result-text result-wave is-visible"
                 onPointerDown={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
@@ -397,11 +501,13 @@ function App() {
                     position: "relative",
                     minHeight: Math.max(
                       resultTextHeight,
-                      resultLayout.lineCount * RESULT_LINE_HEIGHT + RESULT_WAVE_INSET * 2,
+                      (blastLayout ?? resultLayout).lineCount * RESULT_LINE_HEIGHT +
+                        RESULT_WAVE_INSET * 2,
                     ),
                   }}
                 >
-                  {resultLayout.lines.map((line, index) => {
+                  {(blastLayout ?? resultLayout).lines.map((line, index) => {
+                    const showingBlast = Boolean(blastLayout);
                     const baseX = RESULT_WAVE_INSET;
                     const y = RESULT_WAVE_INSET + index * RESULT_LINE_HEIGHT;
                     const availableLineWidth = Math.max(
@@ -445,9 +551,33 @@ function App() {
                     const maxLeft = baseX - edgePadding;
                     const safeX = Math.max(-maxLeft, Math.min(maxRight, xOffset));
 
+                    const bt = blastProgress;
+                    const dir = index % 2 === 0 ? 1 : -1;
+                    const blastScale = 1 + bt * 1.45;
+                    const blastRotate = dir * bt * 8;
+                    const rp = revealProgress;
+                    const revealLift = (1 - rp) * 16;
+                    const revealScale = 0.86 + 0.14 * rp;
+
+                    let transform;
+                    let opacity;
+                    let filter;
+                    let willChange;
+                    if (showingBlast) {
+                      opacity = 1 - bt;
+                      filter = `blur(${bt * 6}px)`;
+                      transform = `translate3d(${safeX}px, ${yOffset}px, 0) scale(${blastScale}) rotate(${blastRotate}deg)`;
+                      willChange = "transform, opacity, filter";
+                    } else {
+                      opacity = rp;
+                      filter = rp < 1 ? `blur(${(1 - rp) * 4}px)` : "none";
+                      transform = `translate3d(${safeX}px, ${yOffset + revealLift}px, 0) scale(${revealScale})`;
+                      willChange = rp < 1 ? "transform, opacity, filter" : "transform";
+                    }
+
                     return (
                       <div
-                        key={`${index}-${line.width}`}
+                        key={`${showingBlast ? "blast" : "show"}-${index}-${line.width}`}
                         style={{
                           position: "absolute",
                           left: baseX,
@@ -457,10 +587,12 @@ function App() {
                           lineHeight: `${RESULT_LINE_HEIGHT}px`,
                           whiteSpace: "pre",
                           overflow: "hidden",
-                          transform: `translate3d(${safeX}px, ${yOffset}px, 0)`,
+                          transform,
+                          opacity,
+                          filter,
                           color: "#0f172a",
                           textShadow: "0 1px 0 rgba(255,255,255,0.82)",
-                          willChange: "transform",
+                          willChange,
                         }}
                       >
                         {line.text}
